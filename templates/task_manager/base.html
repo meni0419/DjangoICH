@@ -43,6 +43,7 @@
             display: flex;
             gap: 20px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
         .nav a {
@@ -101,8 +102,10 @@
         <div class="header">
             <h1>{% block header %}Task Manager{% endblock %}</h1>
             <div class="nav">
-                <a href="{% url 'task_manager:index' %}">Home</a>
                 <a href="{% url 'task_manager:tasks' %}">All Tasks</a>
+                <a href="{% url 'task_manager:categories' %}">Categories</a>
+                <a href="{% url 'task_manager:create_task' %}">+ New Task</a>
+                <a href="{% url 'task_manager:create_category' %}">+ New Category</a>
                 <a href="{% url 'task_manager:admin:index' %}">Admin</a>
             </div>
         </div>

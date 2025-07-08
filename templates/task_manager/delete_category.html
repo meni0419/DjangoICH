@@ -1,0 +1,86 @@
+
+{% extends 'task_manager/base.html' %}
+
+{% block title %}Delete Category - Task Manager{% endblock %}
+{% block header %}Delete Category{% endblock %}
+
+{% block content %}
+<style>
+    .delete-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .delete-icon {
+        font-size: 4em;
+        color: #f56565;
+        margin-bottom: 20px;
+    }
+
+    .delete-title {
+        font-size: 1.8em;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 20px;
+    }
+
+    .delete-warning {
+        background: #fed7d7;
+        color: #c53030;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        border-left: 4px solid #f56565;
+    }
+
+    .delete-info {
+        color: #4a5568;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+
+    .btn-danger {
+        background: #f56565;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #e53e3e;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+</style>
+
+<div class="delete-container">
+    <div class="delete-icon">⚠️</div>
+    <h1 class="delete-title">Delete Category</h1>
+    
+    <div class="delete-warning">
+        <strong>Warning!</strong> This action cannot be undone.
+    </div>
+    
+    <div class="delete-info">
+        <p>Are you sure you want to delete the category <strong>"{{ category.name }}"</strong>?</p>
+        {% if tasks_count > 0 %}
+            <p><strong>This will also remove this category from {{ tasks_count }} task{{ tasks_count|pluralize }}.</strong></p>
+        {% endif %}
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <a href="{% url 'task_manager:categories' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-danger">Delete Category</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

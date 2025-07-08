@@ -140,16 +140,29 @@
         border-left: 4px solid #667eea;
     }
 
+    .subtask-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
     .subtask-title {
         font-weight: 600;
         color: #2d3748;
-        margin-bottom: 5px;
+        font-size: 1.1em;
+    }
+
+    .subtask-actions {
+        display: flex;
+        gap: 5px;
     }
 
     .subtask-description {
         color: #4a5568;
         font-size: 0.9em;
         margin-bottom: 10px;
+        line-height: 1.4;
     }
 
     .subtask-meta {
@@ -180,6 +193,7 @@
         margin-top: 30px;
         display: flex;
         gap: 15px;
+        flex-wrap: wrap;
     }
 
     .deadline-warning {
@@ -197,15 +211,42 @@
         font-weight: 600;
     }
 
+    .btn-small {
+        padding: 4px 8px;
+        font-size: 11px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+
+    .btn-danger {
+        background: #f56565;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #e53e3e;
+    }
+
     @media (max-width: 768px) {
         .task-content {
             grid-template-columns: 1fr;
         }
-        
+
         .task-header {
             flex-direction: column;
             gap: 15px;
             text-align: center;
+        }
+
+        .subtask-header {
+            flex-direction: column;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .subtask-actions {
+            justify-content: flex-end;
         }
     }
 </style>
@@ -221,15 +262,25 @@
     <div class="main-content">
         <div class="section-title">Description</div>
         <div class="task-description">{{ task.description|linebreaks }}</div>
-        
+
         <div class="subtasks">
             <div class="section-title">Subtasks ({{ subtasks.count }})</div>
             {% if subtasks %}
                 <div class="subtask-list">
                     {% for subtask in subtasks %}
                         <div class="subtask-item">
-                            <div class="subtask-title">{{ subtask.title }}</div>
-                            <div class="subtask-description">{{ subtask.description }}</div>
+                            <div class="subtask-header">
+                                <div class="subtask-title">{{ subtask.title }}</div>
+                                <div class="subtask-actions">
+                                    <a href="{% url 'task_manager:edit_subtask' subtask.pk %}" class="btn btn-small">Edit</a>
+                                    <a href="{% url 'task_manager:delete_subtask' subtask.pk %}" class="btn btn-small btn-danger">Delete</a>
+                                </div>
+                            </div>
+
+                            {% if subtask.description %}
+                                <div class="subtask-description">{{ subtask.description }}</div>
+                            {% endif %}
+
                             <div class="subtask-meta">
                                 <span class="subtask-status status-{{ subtask.status|lower|cut:' '|cut:'_' }}">
                                     {{ subtask.get_status_display }}
@@ -273,7 +324,9 @@
         
         <div class="actions">
             <a href="{% url 'task_manager:tasks' %}" class="btn btn-secondary">← Back to Tasks</a>
-            <a href="{% url 'task_manager:admin:task_manager_task_change' task.id %}" class="btn">Edit Task</a>
+            <a href="{% url 'task_manager:create_subtask' task.id %}" class="btn">+ Add Subtask</a>
+            <a href="{% url 'task_manager:edit_task' task.id %}" class="btn">Edit Task</a>
+            <a href="{% url 'task_manager:delete_task' task.id %}" class="btn btn-danger">Delete Task</a>
         </div>
     </div>
 </div>

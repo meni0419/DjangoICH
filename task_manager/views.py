@@ -1,8 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.utils import timezone
+from django.contrib import messages
 from datetime import timedelta
 from .models import Task, SubTask, Category
+from .forms import TaskForm, SubTaskForm, CategoryForm
 
 
 def index(request):
@@ -53,3 +55,182 @@ def task_detail(request, task_id):
         'deadline_status': deadline_status,
     }
     return render(request, 'task_manager/task_detail.html', context)
+
+
+def categories(request):
+    categories = Category.objects.all().order_by('name')
+    context = {
+        'categories': categories,
+    }
+    return render(request, 'task_manager/categories.html', context)
+
+
+# CREATE VIEWS
+def create_category(request):
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            category = form.save()
+            messages.success(request, f'Category "{category.name}" created successfully!')
+            return redirect('task_manager:categories')
+    else:
+        form = CategoryForm()
+
+    context = {
+        'form': form,
+        'title': 'Create New Category'
+    }
+    return render(request, 'task_manager/create_category.html', context)
+
+
+def create_task(request):
+    if request.method == 'POST':
+        form = TaskForm(request.POST)
+        if form.is_valid():
+            task = form.save()
+            messages.success(request, f'Task "{task.title}" created successfully!')
+            return redirect('task_manager:task_detail', task_id=task.id)
+    else:
+        form = TaskForm()
+
+    context = {
+        'form': form,
+        'title': 'Create New Task'
+    }
+    return render(request, 'task_manager/create_task.html', context)
+
+
+def create_subtask(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    if request.method == 'POST':
+        form = SubTaskForm(request.POST)
+        if form.is_valid():
+            subtask = form.save(commit=False)
+            subtask.task = task
+            subtask.save()
+            messages.success(request, f'Subtask "{subtask.title}" created successfully!')
+            return redirect('task_manager:task_detail', task_id=task.id)
+    else:
+        form = SubTaskForm()
+
+    context = {
+        'form': form,
+        'task': task,
+        'title': f'Create Subtask for "{task.title}"'
+    }
+    return render(request, 'task_manager/create_subtask.html', context)
+
+
+# EDIT VIEWS
+def edit_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            category = form.save()
+            messages.success(request, f'Category "{category.name}" updated successfully!')
+            return redirect('task_manager:categories')
+    else:
+        form = CategoryForm(instance=category)
+
+    context = {
+        'form': form,
+        'title': f'Edit Category: {category.name}',
+        'category': category
+    }
+    return render(request, 'task_manager/edit_category.html', context)
+
+
+def edit_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    if request.method == 'POST':
+        form = TaskForm(request.POST, instance=task)
+        if form.is_valid():
+            task = form.save()
+            messages.success(request, f'Task "{task.title}" updated successfully!')
+            return redirect('task_manager:task_detail', task_id=task.id)
+    else:
+        form = TaskForm(instance=task)
+
+    context = {
+        'form': form,
+        'title': f'Edit Task: {task.title}',
+        'task': task
+    }
+    return render(request, 'task_manager/edit_task.html', context)
+
+
+def edit_subtask(request, subtask_id):
+    subtask = get_object_or_404(SubTask, id=subtask_id)
+
+    if request.method == 'POST':
+        form = SubTaskForm(request.POST, instance=subtask)
+        if form.is_valid():
+            subtask = form.save()
+            messages.success(request, f'Subtask "{subtask.title}" updated successfully!')
+            return redirect('task_manager:task_detail', task_id=subtask.task.id)
+    else:
+        form = SubTaskForm(instance=subtask)
+
+    context = {
+        'form': form,
+        'title': f'Edit Subtask: {subtask.title}',
+        'subtask': subtask,
+        'task': subtask.task
+    }
+    return render(request, 'task_manager/edit_subtask.html', context)
+
+
+# DELETE VIEWS
+def delete_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+
+    if request.method == 'POST':
+        category_name = category.name
+        tasks_count = category.task_set.count()
+        category.delete()
+        messages.success(request, f'Category "{category_name}" and {tasks_count} related tasks deleted successfully!')
+        return redirect('task_manager:categories')
+
+    context = {
+        'category': category,
+        'tasks_count': category.task_set.count()
+    }
+    return render(request, 'task_manager/delete_category.html', context)
+
+
+def delete_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    if request.method == 'POST':
+        task_title = task.title
+        subtasks_count = task.subtasks.count()
+        task.delete()  # This will automatically delete all subtasks due to CASCADE
+        messages.success(request, f'Task "{task_title}" and {subtasks_count} subtasks deleted successfully!')
+        return redirect('task_manager:tasks')
+
+    context = {
+        'task': task,
+        'subtasks_count': task.subtasks.count()
+    }
+    return render(request, 'task_manager/delete_task.html', context)
+
+
+def delete_subtask(request, subtask_id):
+    subtask = get_object_or_404(SubTask, id=subtask_id)
+
+    if request.method == 'POST':
+        subtask_title = subtask.title
+        task_id = subtask.task.id
+        subtask.delete()
+        messages.success(request, f'Subtask "{subtask_title}" deleted successfully!')
+        return redirect('task_manager:task_detail', task_id=task_id)
+
+    context = {
+        'subtask': subtask,
+        'task': subtask.task
+    }
+    return render(request, 'task_manager/delete_subtask.html', context)

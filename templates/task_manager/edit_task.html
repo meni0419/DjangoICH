@@ -1,0 +1,82 @@
+{% extends 'task_manager/form_base.html' %}
+
+{% block title %}{{ title }} - Task Manager{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+
+{% block form_content %}
+<form method="post">
+    {% csrf_token %}
+    
+    <div class="form-group">
+        <label for="{{ form.title.id_for_label }}" class="form-label">Task Title:</label>
+        {{ form.title }}
+        {% if form.title.errors %}
+            <ul class="error-list">
+                {% for error in form.title.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.description.id_for_label }}" class="form-label">Description:</label>
+        {{ form.description }}
+        {% if form.description.errors %}
+            <ul class="error-list">
+                {% for error in form.description.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.status.id_for_label }}" class="form-label">Status:</label>
+        {{ form.status }}
+        {% if form.status.errors %}
+            <ul class="error-list">
+                {% for error in form.status.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.deadline.id_for_label }}" class="form-label">Deadline:</label>
+        {{ form.deadline }}
+        {% if form.deadline.errors %}
+            <ul class="error-list">
+                {% for error in form.deadline.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <label class="form-label">Categories:</label>
+        <div class="form-checkbox-group">
+            {% for choice in form.categories %}
+                <div class="form-checkbox-item">
+                    {{ choice.tag }}
+                    <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                </div>
+            {% endfor %}
+        </div>
+        {% if form.categories.errors %}
+            <ul class="error-list">
+                {% for error in form.categories.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    
+    <div class="form-actions">
+        <a href="{% url 'task_manager:task_detail' task.id %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-success">Update Task</button>
+    </div>
+</form>
+{% endblock %}

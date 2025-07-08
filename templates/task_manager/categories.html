@@ -1,0 +1,100 @@
+{% extends 'task_manager/base.html' %}
+
+{% block title %}Categories - Task Manager{% endblock %}
+{% block header %}Categories{% endblock %}
+
+{% block content %}
+<style>
+    .categories-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .category-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border-left: 4px solid #667eea;
+    }
+
+    .category-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .category-name {
+        font-size: 1.3em;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 10px;
+    }
+
+    .category-stats {
+        color: #718096;
+        font-size: 0.9em;
+        margin-bottom: 15px;
+    }
+
+    .category-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .btn-danger {
+        background: #f56565;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #e53e3e;
+    }
+
+    .no-categories {
+        text-align: center;
+        color: #718096;
+        font-size: 1.1em;
+        margin: 40px 0;
+    }
+</style>
+
+<div class="categories-header">
+    <h2 style="margin: 0; color: #2d3748;">All Categories</h2>
+    <a href="{% url 'task_manager:create_category' %}" class="btn">+ Add Category</a>
+</div>
+
+{% if categories %}
+    <div class="categories-grid">
+        {% for category in categories %}
+            <div class="category-card">
+                <div class="category-name">{{ category.name }}</div>
+                <div class="category-stats">
+                    {{ category.task_set.count }} task{{ category.task_set.count|pluralize }}
+                </div>
+                <div class="category-actions">
+                    <a href="{% url 'task_manager:edit_category' category.id %}" class="btn btn-small">Edit</a>
+                    <a href="{% url 'task_manager:delete_category' category.id %}" class="btn btn-small btn-danger">Delete</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="no-categories">
+        <p>No categories yet. <a href="{% url 'task_manager:create_category' %}">Create your first category</a>!</p>
+    </div>
+{% endif %}
+{% endblock %}
