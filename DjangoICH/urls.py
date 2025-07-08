@@ -19,5 +19,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('blog.urls')),  # Include your blog URLs
+    path('blog/', include('blog.urls')),
+    path('tasks/', include('task_manager.urls')),
 ]

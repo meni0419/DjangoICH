@@ -1,12 +1,14 @@
 from django.urls import path
 from . import views
+from .admin import blog_admin_site
 
-blog = 'blog'  # This creates a namespace for the blog app
+app_name = 'blog'  # This creates a namespace for the blog app
 
 urlpatterns = [
     path('', views.index, name=''),  # blog/
-    path('blog/home/', views.home, name='blog_home'),  # blog/home/
-    path('blog/about/', views.about, name='about'),  # blog/about/
-    path('blog/posts/', views.posts, name='posts'),  # blog/posts/
+    path('home/', views.home, name='blog_home'),  # blog/home/
+    path('about/', views.about, name='about'),  # blog/about/
+    path('posts/', views.posts, name='posts'),  # blog/posts/
+    path('admin/', blog_admin_site.urls), # blog/admin/
 ]
 

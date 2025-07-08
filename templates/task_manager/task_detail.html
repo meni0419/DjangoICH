@@ -1,0 +1,280 @@
+{% extends 'task_manager/base.html' %}
+
+{% block title %}{{ task.title }} - Task Manager{% endblock %}
+
+{% block header %}Task Details{% endblock %}
+
+{% block content %}
+<style>
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .task-title {
+        font-size: 2.2em;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+    }
+
+    .task-status {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-new {
+        background: #bee3f8;
+        color: #2b6cb0;
+    }
+
+    .status-in-progress {
+        background: #fbd38d;
+        color: #c05621;
+    }
+
+    .status-pending {
+        background: #fbb6ce;
+        color: #b83280;
+    }
+
+    .status-blocked {
+        background: #fed7d7;
+        color: #c53030;
+    }
+
+    .status-done {
+        background: #c6f6d5;
+        color: #276749;
+    }
+
+    .task-content {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+    }
+
+    .main-content {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .sidebar {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        height: fit-content;
+    }
+
+    .section-title {
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 8px;
+    }
+
+    .task-description {
+        color: #4a5568;
+        line-height: 1.6;
+        margin-bottom: 30px;
+        font-size: 1.1em;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .info-value {
+        color: #4a5568;
+    }
+
+    .categories {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .category-tag {
+        background: #edf2f7;
+        color: #4a5568;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .subtasks {
+        margin-top: 30px;
+    }
+
+    .subtask-list {
+        margin-top: 15px;
+    }
+
+    .subtask-item {
+        background: #f8fafc;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+
+    .subtask-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 5px;
+    }
+
+    .subtask-description {
+        color: #4a5568;
+        font-size: 0.9em;
+        margin-bottom: 10px;
+    }
+
+    .subtask-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9em;
+    }
+
+    .subtask-status {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .no-subtasks {
+        color: #718096;
+        font-style: italic;
+        text-align: center;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 8px;
+    }
+
+    .actions {
+        margin-top: 30px;
+        display: flex;
+        gap: 15px;
+    }
+
+    .deadline-warning {
+        color: #f56565;
+        font-weight: 600;
+    }
+
+    .deadline-upcoming {
+        color: #f6ad55;
+        font-weight: 600;
+    }
+
+    .deadline-safe {
+        color: #48bb78;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .task-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .task-header {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="task-header">
+    <h1 class="task-title">{{ task.title }}</h1>
+    <span class="task-status status-{{ task.status|lower|cut:' '|cut:'_' }}">
+        {{ task.get_status_display }}
+    </span>
+</div>
+
+<div class="task-content">
+    <div class="main-content">
+        <div class="section-title">Description</div>
+        <div class="task-description">{{ task.description|linebreaks }}</div>
+        
+        <div class="subtasks">
+            <div class="section-title">Subtasks ({{ subtasks.count }})</div>
+            {% if subtasks %}
+                <div class="subtask-list">
+                    {% for subtask in subtasks %}
+                        <div class="subtask-item">
+                            <div class="subtask-title">{{ subtask.title }}</div>
+                            <div class="subtask-description">{{ subtask.description }}</div>
+                            <div class="subtask-meta">
+                                <span class="subtask-status status-{{ subtask.status|lower|cut:' '|cut:'_' }}">
+                                    {{ subtask.get_status_display }}
+                                </span>
+                                <span>Due: {{ subtask.deadline|date:"M d, Y" }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-subtasks">No subtasks yet.</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="sidebar">
+        <div class="section-title">Task Info</div>
+        
+        <div class="info-row">
+            <span class="info-label">Created:</span>
+            <span class="info-value">{{ task.created_at|date:"M d, Y H:i" }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span class="info-label">Deadline:</span>
+            <span class="info-value deadline-{{ deadline_status }}">
+                {{ task.deadline|date:"M d, Y H:i" }}
+            </span>
+        </div>
+        
+        <div class="info-row">
+            <span class="info-label">Categories:</span>
+            <div class="categories">
+                {% for category in task.categories.all %}
+                    <span class="category-tag">{{ category.name }}</span>
+                {% empty %}
+                    <span class="info-value">No categories</span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="actions">
+            <a href="{% url 'task_manager:tasks' %}" class="btn btn-secondary">← Back to Tasks</a>
+            <a href="{% url 'task_manager:admin:task_manager_task_change' task.id %}" class="btn">Edit Task</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
