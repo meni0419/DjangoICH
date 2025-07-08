@@ -1,3 +1,4 @@
+
 from django.db import models
 from django.utils import timezone
 
@@ -14,7 +15,12 @@ class Category(models.Model):
     name = models.CharField(max_length=100)
 
     class Meta:
-        verbose_name_plural = "Categories"
+        db_table = 'task_manager_category'
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
+        constraints = [
+            models.UniqueConstraint(fields=['name'], name='unique_category_name')
+        ]
 
     def __str__(self):
         return self.name
@@ -29,12 +35,12 @@ class Task(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
+        db_table = 'task_manager_task'
+        verbose_name = 'Task'
+        verbose_name_plural = 'Tasks'
+        ordering = ['-created_at']
         constraints = [
-            models.UniqueConstraint(
-                fields=['title'],
-                condition=models.Q(created_at__date=models.F('created_at__date')),
-                name='unique_title_per_day'
-            )
+            models.UniqueConstraint(fields=['title'], name='unique_task_title')
         ]
 
     def __str__(self):
@@ -48,6 +54,15 @@ class SubTask(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NEW')
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'task_manager_subtask'
+        verbose_name = 'SubTask'
+        verbose_name_plural = 'SubTasks'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['title'], name='unique_subtask_title')
+        ]
 
     def __str__(self):
         return self.title
