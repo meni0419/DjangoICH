@@ -9,4 +9,10 @@ def index(request):
 
 
 def home(request):
-    return render(request, 'app/home.html')
+    return render(request, 'blog/home.html')
+
+def about(request):
+    return HttpResponse("Blog Posts - Coming Soon!")
+
+def posts(request):
+    return HttpResponse("Blog Posts - Coming Soon!")
