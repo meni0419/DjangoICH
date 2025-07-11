@@ -7,10 +7,18 @@
 {% block content %}
 <style>
     .filters {
-        display: flex;
-        gap: 15px;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         margin-bottom: 30px;
-        flex-wrap: wrap;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
     }
 
     .filter-group {
@@ -22,9 +30,11 @@
     .filter-group label {
         font-weight: 600;
         color: #4a5568;
+        font-size: 14px;
     }
 
-    .filter-group select {
+    .filter-group select,
+    .filter-group input[type="date"] {
         padding: 8px 12px;
         border: 2px solid #e2e8f0;
         border-radius: 8px;
@@ -32,9 +42,51 @@
         transition: border-color 0.3s ease;
     }
 
-    .filter-group select:focus {
+    .filter-group select:focus,
+    .filter-group input[type="date"]:focus {
         outline: none;
         border-color: #667eea;
+    }
+
+    .date-range {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 15px;
+    }
+
+    .btn-filter {
+        padding: 8px 16px;
+        font-size: 14px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-apply {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-apply:hover {
+        background: #5a67d8;
+    }
+
+    .btn-clear {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .btn-clear:hover {
+        background: #cbd5e0;
     }
 
     .task-grid {
@@ -140,6 +192,14 @@
         color: #718096;
     }
 
+    .task-dates {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        font-size: 0.85em;
+        color: #718096;
+    }
+
     .task-categories {
         display: flex;
         gap: 5px;
@@ -198,6 +258,24 @@
         color: #718096;
         font-weight: 600;
     }
+
+    @media (max-width: 768px) {
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .date-range {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-actions {
+            justify-content: stretch;
+        }
+
+        .btn-filter {
+            flex: 1;
+        }
+    }
 </style>
 
 <div class="stats">
@@ -212,28 +290,51 @@
 </div>
 
 <div class="filters">
-    <div class="filter-group">
-        <label for="status-filter">Filter by Status:</label>
-        <select id="status-filter" onchange="filterTasks()">
-            <option value="">All Status</option>
-            {% for status_code, status_name in status_choices %}
-                <option value="{{ status_code }}" {% if current_status == status_code %}selected{% endif %}>
-                    {{ status_name }}
-                </option>
-            {% endfor %}
-        </select>
+    <div class="filters-grid">
+        <div class="filter-group">
+            <label for="status-filter">Filter by Status:</label>
+            <select id="status-filter">
+                <option value="">All Status</option>
+                {% for status_code, status_name in status_choices %}
+                    <option value="{{ status_code }}" {% if current_status == status_code %}selected{% endif %}>
+                        {{ status_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="category-filter">Filter by Category:</label>
+            <select id="category-filter">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if current_category == category.id %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="date-field">Date Field:</label>
+            <select id="date-field">
+                <option value="created_at" {% if current_date_field == 'created_at' %}selected{% endif %}>Created Date</option>
+                <option value="deadline" {% if current_date_field == 'deadline' %}selected{% endif %}>Deadline</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Date Range:</label>
+            <div class="date-range">
+                <input type="date" id="date-from" value="{{ current_date_from }}" placeholder="From">
+                <input type="date" id="date-to" value="{{ current_date_to }}" placeholder="To">
+            </div>
+        </div>
     </div>
-    
-    <div class="filter-group">
-        <label for="category-filter">Filter by Category:</label>
-        <select id="category-filter" onchange="filterTasks()">
-            <option value="">All Categories</option>
-            {% for category in categories %}
-                <option value="{{ category.id }}" {% if current_category == category.id %}selected{% endif %}>
-                    {{ category.name }}
-                </option>
-            {% endfor %}
-        </select>
+
+    <div class="filter-actions">
+        <button class="btn-filter btn-clear" onclick="clearFilters()">Clear Filters</button>
+        <button class="btn-filter btn-apply" onclick="applyFilters()">Apply Filters</button>
     </div>
 </div>
 
@@ -242,24 +343,26 @@
         {% for task in tasks %}
             <div class="task-card status-{{ task.status|lower|cut:' '|cut:'_' }}">
                 <div class="task-title">{{ task.title }}</div>
-                
+
                 <div class="task-description">{{ task.description }}</div>
-                
+
+                <div class="task-dates">
+                    <span>Created: {{ task.created_at|date:"M d, Y" }}</span>
+                    <span>Due: {{ task.deadline|date:"M d, Y" }}</span>
+                </div>
+
                 <div class="task-categories">
                     {% for category in task.categories.all %}
                         <span class="category-tag">{{ category.name }}</span>
                     {% endfor %}
                 </div>
-                
+
                 <div class="task-meta">
                     <span class="task-status status-{{ task.status|lower|cut:' '|cut:'_' }}">
                         {{ task.get_status_display }}
                     </span>
-                    <span class="task-deadline">
-                        Due: {{ task.deadline|date:"M d, Y" }}
-                    </span>
                 </div>
-                
+
                 <div class="task-actions">
                     <a href="{% url 'task_manager:task_detail' task.id %}" class="btn btn-small">View Details</a>
                 </div>
@@ -268,30 +371,49 @@
     </div>
 {% else %}
     <div class="no-tasks">
-        <p>No tasks found. <a href="{% url 'task_manager:admin:index' %}">Create your first task</a>!</p>
+        <p>No tasks found matching your criteria.</p>
+        <p><a href="{% url 'task_manager:tasks' %}">Clear filters</a> or <a href="{% url 'task_manager:create_task' %}">create your first task</a>!</p>
     </div>
 {% endif %}
 
 <script>
-function filterTasks() {
+function applyFilters() {
     const status = document.getElementById('status-filter').value;
     const category = document.getElementById('category-filter').value;
-    
+    const dateField = document.getElementById('date-field').value;
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo = document.getElementById('date-to').value;
+
     let url = new URL(window.location.href);
-    
-    if (status) {
-        url.searchParams.set('status', status);
-    } else {
-        url.searchParams.delete('status');
-    }
-    
-    if (category) {
-        url.searchParams.set('category', category);
-    } else {
-        url.searchParams.delete('category');
-    }
-    
+
+    // Clear all existing filters
+    url.searchParams.delete('status');
+    url.searchParams.delete('category');
+    url.searchParams.delete('date_field');
+    url.searchParams.delete('date_from');
+    url.searchParams.delete('date_to');
+
+    // Add new filters
+    if (status) url.searchParams.set('status', status);
+    if (category) url.searchParams.set('category', category);
+    if (dateField) url.searchParams.set('date_field', dateField);
+    if (dateFrom) url.searchParams.set('date_from', dateFrom);
+    if (dateTo) url.searchParams.set('date_to', dateTo);
+
     window.location.href = url.toString();
 }
+
+function clearFilters() {
+    window.location.href = window.location.pathname;
+}
+
+// Apply filters when Enter is pressed in date inputs
+document.getElementById('date-from').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') applyFilters();
+});
+
+document.getElementById('date-to').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') applyFilters();
+});
 </script>
 {% endblock %}

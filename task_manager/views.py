@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib import messages
-from datetime import timedelta
+from datetime import timedelta, datetime
+from django.db.models import Q
 from .models import Task, SubTask, Category
 from .forms import TaskForm, SubTaskForm, CategoryForm
 
@@ -26,19 +27,79 @@ def tasks(request):
     if category_filter:
         tasks = tasks.filter(categories__id=category_filter)
 
+    # Filter by date range
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    date_field = request.GET.get('date_field', 'created_at')  # Default to created_at
+
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            if date_field == 'deadline':
+                tasks = tasks.filter(deadline__date__gte=date_from_parsed)
+            else:  # created_at
+                tasks = tasks.filter(created_at__date__gte=date_from_parsed)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            if date_field == 'deadline':
+                tasks = tasks.filter(deadline__date__lte=date_to_parsed)
+            else:  # created_at
+                tasks = tasks.filter(created_at__date__lte=date_to_parsed)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+
     context = {
         'tasks': tasks,
         'categories': categories,
         'status_choices': Task._meta.get_field('status').choices,
         'current_status': status_filter,
         'current_category': int(category_filter) if category_filter else None,
+        'current_date_from': date_from,
+        'current_date_to': date_to,
+        'current_date_field': date_field,
     }
     return render(request, 'task_manager/tasks.html', context)
 
 
 def task_detail(request, task_id):
     task = get_object_or_404(Task, id=task_id)
-    subtasks = task.subtasks.all().order_by('-created_at')
+    all_subtasks = task.subtasks.all()
+
+    # Filter subtasks by status if provided
+    subtask_status_filter = request.GET.get('subtask_status')
+    if subtask_status_filter:
+        all_subtasks = all_subtasks.filter(status=subtask_status_filter)
+
+    # Filter subtasks by date range
+    subtask_date_from = request.GET.get('subtask_date_from')
+    subtask_date_to = request.GET.get('subtask_date_to')
+    subtask_date_field = request.GET.get('subtask_date_field', 'created_at')  # Default to created_at
+
+    if subtask_date_from:
+        try:
+            date_from_parsed = datetime.strptime(subtask_date_from, '%Y-%m-%d').date()
+            if subtask_date_field == 'deadline':
+                all_subtasks = all_subtasks.filter(deadline__date__gte=date_from_parsed)
+            else:  # created_at
+                all_subtasks = all_subtasks.filter(created_at__date__gte=date_from_parsed)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+
+    if subtask_date_to:
+        try:
+            date_to_parsed = datetime.strptime(subtask_date_to, '%Y-%m-%d').date()
+            if subtask_date_field == 'deadline':
+                all_subtasks = all_subtasks.filter(deadline__date__lte=date_to_parsed)
+            else:  # created_at
+                all_subtasks = all_subtasks.filter(created_at__date__lte=date_to_parsed)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+
+    subtasks = all_subtasks.order_by('-created_at')
 
     # Calculate deadline status
     now = timezone.now()
@@ -52,7 +113,13 @@ def task_detail(request, task_id):
     context = {
         'task': task,
         'subtasks': subtasks,
+        'all_subtasks': task.subtasks.all(),  # For statistics (unfiltered)
         'deadline_status': deadline_status,
+        'status_choices': SubTask._meta.get_field('status').choices,
+        'current_subtask_status': subtask_status_filter,
+        'current_subtask_date_from': subtask_date_from,
+        'current_subtask_date_to': subtask_date_to,
+        'current_subtask_date_field': subtask_date_field,
     }
     return render(request, 'task_manager/task_detail.html', context)
 

@@ -128,6 +128,127 @@
         margin-top: 30px;
     }
 
+    .subtasks-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .subtasks-stats {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        background: #f8fafc;
+        padding: 10px 15px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+        min-width: 80px;
+    }
+
+    .stat-number {
+        font-size: 1.2em;
+        font-weight: 700;
+        color: #667eea;
+        display: block;
+    }
+
+    .stat-label {
+        font-size: 0.8em;
+        color: #718096;
+        margin-top: 2px;
+    }
+
+    .subtask-filters {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 20px;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .filter-group label {
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 0.9em;
+    }
+
+    .filter-group select,
+    .filter-group input[type="date"] {
+        padding: 6px 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+        background: white;
+    }
+
+    .filter-group select:focus,
+    .filter-group input[type="date"]:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .date-range {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .btn-filter {
+        padding: 6px 12px;
+        font-size: 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-apply {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-apply:hover {
+        background: #5a67d8;
+    }
+
+    .btn-clear {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .btn-clear:hover {
+        background: #cbd5e0;
+    }
+
     .subtask-list {
         margin-top: 15px;
     }
@@ -163,6 +284,14 @@
         font-size: 0.9em;
         margin-bottom: 10px;
         line-height: 1.4;
+    }
+
+    .subtask-dates {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 0.8em;
+        color: #718096;
     }
 
     .subtask-meta {
@@ -248,6 +377,26 @@
         .subtask-actions {
             justify-content: flex-end;
         }
+
+        .subtasks-stats {
+            justify-content: center;
+        }
+
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .date-range {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-actions {
+            justify-content: stretch;
+        }
+
+        .btn-filter {
+            flex: 1;
+        }
     }
 </style>
 
@@ -264,7 +413,61 @@
         <div class="task-description">{{ task.description|linebreaks }}</div>
 
         <div class="subtasks">
-            <div class="section-title">Subtasks ({{ subtasks.count }})</div>
+            <div class="subtasks-header">
+                <div class="section-title" style="margin-bottom: 0;">Subtasks</div>
+            </div>
+
+            <!-- Subtasks Statistics -->
+            <div class="subtasks-stats">
+                <div class="stat-item">
+                    <span class="stat-number">{{ all_subtasks.count }}</span>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ subtasks.count }}</span>
+                    <div class="stat-label">Showing</div>
+                </div>
+            </div>
+
+            <!-- Subtasks Filters -->
+            <div class="subtask-filters">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="subtask-status-filter">Status:</label>
+                        <select id="subtask-status-filter">
+                            <option value="">All Status</option>
+                            {% for status_code, status_name in status_choices %}
+                                <option value="{{ status_code }}" {% if current_subtask_status == status_code %}selected{% endif %}>
+                                    {{ status_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="subtask-date-field">Date Field:</label>
+                        <select id="subtask-date-field">
+                            <option value="created_at" {% if current_subtask_date_field == 'created_at' %}selected{% endif %}>Created Date</option>
+                            <option value="deadline" {% if current_subtask_date_field == 'deadline' %}selected{% endif %}>Deadline</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Date Range:</label>
+                        <div class="date-range">
+                            <input type="date" id="subtask-date-from" value="{{ current_subtask_date_from }}" placeholder="From">
+                            <input type="date" id="subtask-date-to" value="{{ current_subtask_date_to }}" placeholder="To">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-actions">
+                    <button class="btn-filter btn-clear" onclick="clearSubtaskFilters()">Clear</button>
+                    <button class="btn-filter btn-apply" onclick="applySubtaskFilters()">Apply</button>
+                </div>
+            </div>
+
+            <!-- Subtasks List -->
             {% if subtasks %}
                 <div class="subtask-list">
                     {% for subtask in subtasks %}
@@ -281,36 +484,47 @@
                                 <div class="subtask-description">{{ subtask.description }}</div>
                             {% endif %}
 
+                            <div class="subtask-dates">
+                                <span>Created: {{ subtask.created_at|date:"M d, Y" }}</span>
+                                <span>Due: {{ subtask.deadline|date:"M d, Y" }}</span>
+                            </div>
+
                             <div class="subtask-meta">
                                 <span class="subtask-status status-{{ subtask.status|lower|cut:' '|cut:'_' }}">
                                     {{ subtask.get_status_display }}
                                 </span>
-                                <span>Due: {{ subtask.deadline|date:"M d, Y" }}</span>
                             </div>
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="no-subtasks">No subtasks yet.</div>
+                <div class="no-subtasks">
+                    {% if current_subtask_status or current_subtask_date_from or current_subtask_date_to %}
+                        <p>No subtasks found matching your criteria.</p>
+                        <p><a href="?">Show all subtasks</a></p>
+                    {% else %}
+                        <p>No subtasks yet.</p>
+                    {% endif %}
+                </div>
             {% endif %}
         </div>
     </div>
-    
+
     <div class="sidebar">
         <div class="section-title">Task Info</div>
-        
+
         <div class="info-row">
             <span class="info-label">Created:</span>
             <span class="info-value">{{ task.created_at|date:"M d, Y H:i" }}</span>
         </div>
-        
+
         <div class="info-row">
             <span class="info-label">Deadline:</span>
             <span class="info-value deadline-{{ deadline_status }}">
                 {{ task.deadline|date:"M d, Y H:i" }}
             </span>
         </div>
-        
+
         <div class="info-row">
             <span class="info-label">Categories:</span>
             <div class="categories">
@@ -321,7 +535,7 @@
                 {% endfor %}
             </div>
         </div>
-        
+
         <div class="actions">
             <a href="{% url 'task_manager:tasks' %}" class="btn btn-secondary">← Back to Tasks</a>
             <a href="{% url 'task_manager:create_subtask' task.id %}" class="btn">+ Add Subtask</a>
@@ -330,4 +544,47 @@
         </div>
     </div>
 </div>
+
+<script>
+function applySubtaskFilters() {
+    const status = document.getElementById('subtask-status-filter').value;
+    const dateField = document.getElementById('subtask-date-field').value;
+    const dateFrom = document.getElementById('subtask-date-from').value;
+    const dateTo = document.getElementById('subtask-date-to').value;
+
+    let url = new URL(window.location.href);
+
+    // Clear existing subtask filters
+    url.searchParams.delete('subtask_status');
+    url.searchParams.delete('subtask_date_field');
+    url.searchParams.delete('subtask_date_from');
+    url.searchParams.delete('subtask_date_to');
+
+    // Add new filters
+    if (status) url.searchParams.set('subtask_status', status);
+    if (dateField) url.searchParams.set('subtask_date_field', dateField);
+    if (dateFrom) url.searchParams.set('subtask_date_from', dateFrom);
+    if (dateTo) url.searchParams.set('subtask_date_to', dateTo);
+
+    window.location.href = url.toString();
+}
+
+function clearSubtaskFilters() {
+    let url = new URL(window.location.href);
+    url.searchParams.delete('subtask_status');
+    url.searchParams.delete('subtask_date_field');
+    url.searchParams.delete('subtask_date_from');
+    url.searchParams.delete('subtask_date_to');
+    window.location.href = url.toString();
+}
+
+// Apply filters when Enter is pressed in date inputs
+document.getElementById('subtask-date-from').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') applySubtaskFilters();
+});
+
+document.getElementById('subtask-date-to').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') applySubtaskFilters();
+});
+</script>
 {% endblock %}
