@@ -1,13 +1,16 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 from .admin import task_admin_site
 
 app_name = 'task_manager'
 
 urlpatterns = [
+    # API URLs
+    path('api/', include('task_manager.api_urls')),  # /tasks/api/
+
+    # Web interface URLs
     path('', views.index, name='index'),  # /tasks/ - for the index view
     path('list/', views.tasks, name='tasks'),  # /tasks/list/ - for the tasks list
-    path('<int:task_id>/', views.task_detail, name='task_detail'),  # /tasks/1/
 
     # Create pages
     path('create/category/', views.create_category, name='create_category'),  # /tasks/create/category/
@@ -29,4 +32,7 @@ urlpatterns = [
     path('categories/', views.categories, name='categories'),  # /tasks/categories/
 
     path('admin/', task_admin_site.urls),  # /tasks/admin/
+
+    # Task detail URL LAST - so it doesn't catch other patterns
+    path('<int:task_id>/', views.task_detail, name='task_detail'),  # /tasks/1/
 ]

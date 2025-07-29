@@ -1,17 +1,14 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
-from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta, datetime
-from django.db.models import Q
-from .models import Task, SubTask, Category
 from .forms import TaskForm, SubTaskForm, CategoryForm
+from django.utils import timezone
+from .models import Task, SubTask, Category
 
 
 def index(request):
     # Show a simple dashboard or redirect to tasks
     return redirect('task_manager:tasks')
-
 
 def tasks(request):
     tasks = Task.objects.all().order_by('-created_at')
@@ -63,7 +60,6 @@ def tasks(request):
         'current_date_field': date_field,
     }
     return render(request, 'task_manager/tasks.html', context)
-
 
 def task_detail(request, task_id):
     task = get_object_or_404(Task, id=task_id)
@@ -123,7 +119,6 @@ def task_detail(request, task_id):
     }
     return render(request, 'task_manager/task_detail.html', context)
 
-
 def categories(request):
     categories = Category.objects.all().order_by('name')
     context = {
@@ -131,8 +126,6 @@ def categories(request):
     }
     return render(request, 'task_manager/categories.html', context)
 
-
-# CREATE VIEWS
 def create_category(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
@@ -149,7 +142,6 @@ def create_category(request):
     }
     return render(request, 'task_manager/create_category.html', context)
 
-
 def create_task(request):
     if request.method == 'POST':
         form = TaskForm(request.POST)
@@ -165,7 +157,6 @@ def create_task(request):
         'title': 'Create New Task'
     }
     return render(request, 'task_manager/create_task.html', context)
-
 
 def create_subtask(request, task_id):
     task = get_object_or_404(Task, id=task_id)
@@ -188,7 +179,6 @@ def create_subtask(request, task_id):
     }
     return render(request, 'task_manager/create_subtask.html', context)
 
-
 # EDIT VIEWS
 def edit_category(request, category_id):
     category = get_object_or_404(Category, id=category_id)
@@ -209,7 +199,6 @@ def edit_category(request, category_id):
     }
     return render(request, 'task_manager/edit_category.html', context)
 
-
 def edit_task(request, task_id):
     task = get_object_or_404(Task, id=task_id)
 
@@ -228,7 +217,6 @@ def edit_task(request, task_id):
         'task': task
     }
     return render(request, 'task_manager/edit_task.html', context)
-
 
 def edit_subtask(request, subtask_id):
     subtask = get_object_or_404(SubTask, id=subtask_id)
@@ -250,7 +238,6 @@ def edit_subtask(request, subtask_id):
     }
     return render(request, 'task_manager/edit_subtask.html', context)
 
-
 # DELETE VIEWS
 def delete_category(request, category_id):
     category = get_object_or_404(Category, id=category_id)
@@ -259,7 +246,8 @@ def delete_category(request, category_id):
         category_name = category.name
         tasks_count = category.task_set.count()
         category.delete()
-        messages.success(request, f'Category "{category_name}" and {tasks_count} related tasks deleted successfully!')
+        messages.success(request,
+                         f'Category "{category_name}" and {tasks_count} related tasks deleted successfully!')
         return redirect('task_manager:categories')
 
     context = {
@@ -267,7 +255,6 @@ def delete_category(request, category_id):
         'tasks_count': category.task_set.count()
     }
     return render(request, 'task_manager/delete_category.html', context)
-
 
 def delete_task(request, task_id):
     task = get_object_or_404(Task, id=task_id)
@@ -284,7 +271,6 @@ def delete_task(request, task_id):
         'subtasks_count': task.subtasks.count()
     }
     return render(request, 'task_manager/delete_task.html', context)
-
 
 def delete_subtask(request, subtask_id):
     subtask = get_object_or_404(SubTask, id=subtask_id)

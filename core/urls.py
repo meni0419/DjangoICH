@@ -1,5 +1,5 @@
 """
-URL configuration for DjangoICH project.
+URL configuration for core project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -21,4 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('blog/', include('blog.urls')),
     path('tasks/', include('task_manager.urls')),
+    path('api/tasks/', include('task_manager.api_urls')),
 ]
+
