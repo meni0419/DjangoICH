@@ -1,12 +1,12 @@
-
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Count
-from .models import Task, Category
-from .serializers import TaskSerializer, TaskCreateSerializer
+from .models import Task, Category, SubTask
+from .serializers import TaskSerializer, TaskCreateSerializer, SubTaskSerializer, SubTaskCreateSerializer
 
 
 class TaskCreateAPIView(generics.CreateAPIView):
@@ -49,6 +49,106 @@ class TaskDetailAPIView(generics.RetrieveAPIView):
     """API endpoint for getting a specific task by ID"""
     queryset = Task.objects.all().prefetch_related('categories', 'subtasks')
     serializer_class = TaskSerializer
+
+
+class SubTaskListCreateView(APIView):
+    """API endpoint for creating subtasks"""
+
+    def get(self, request):
+        """Get list of all subtasks"""
+        task_id = request.GET.get('task_id')
+
+        if task_id:
+            subtasks = SubTask.objects.filter(task_id=task_id)
+        else:
+            subtasks = SubTask.objects.all()
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            subtasks = subtasks.filter(status=status_filter)
+
+        subtasks = subtasks.select_related('task').order_by('-created_at')
+        serializer = SubTaskSerializer(subtasks, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Create a new subtask"""
+        serializer = SubTaskCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            subtask = serializer.save()
+            # Return full subtask data
+            response_serializer = SubTaskSerializer(subtask)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubTaskDetailUpdateDeleteView(APIView):
+    """API endpoint for updating and deleting a specific subtask by ID"""
+
+    def get_object(self, pk):
+        """Helper method to get subtask object"""
+        return get_object_or_404(SubTask, pk=pk)
+
+    def get(self, request, pk):
+        """Get subtask details"""
+        subtask = self.get_object(pk)
+        serializer = SubTaskSerializer(subtask)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        """Update subtask details"""
+        subtask = self.get_object(pk)
+        serializer = SubTaskCreateSerializer(subtask, data=request.data)
+        if serializer.is_valid():
+            updated_subtask = serializer.save()
+            # Return full subtask data
+            response_serializer = SubTaskSerializer(updated_subtask)
+            return Response(response_serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        """Partially update subtask details"""
+        subtask = self.get_object(pk)
+        serializer = SubTaskCreateSerializer(subtask, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_subtask = serializer.save()
+            response_serializer = SubTaskSerializer(updated_subtask)
+            return Response(response_serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        """Delete specific subtask"""
+        subtask = self.get_object(pk)
+        subtask_title = subtask.title
+        subtask.delete()
+        return Response(
+            {'message': f'SubTask "{subtask_title}" has been deleted successfully.'},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
+class TaskSubTasksView(APIView):
+    """
+    API view for getting all subtasks of a specific task
+    """
+
+    def get(self, request, task_id):
+        """Get all subtasks for a specific task"""
+        task = get_object_or_404(Task, pk=task_id)
+        subtasks = task.subtasks.all().order_by('-created_at')
+
+        # Optional: filter by status
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            subtasks = subtasks.filter(status=status_filter)
+
+        serializer = SubTaskSerializer(subtasks, many=True)
+        return Response({
+            'task_id': task.id,
+            'task_title': task.title,
+            'subtasks_count': subtasks.count(),
+            'subtasks': serializer.data
+        })
 
 
 @api_view(['GET'])

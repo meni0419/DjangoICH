@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Task, Category, SubTask
+from django.utils import timezone
+
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -12,6 +14,12 @@ class SubTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubTask
         fields = ['id', 'title', 'description', 'status', 'deadline', 'created_at']
+        read_only_fields = ['created_at']
+
+class SubTaskCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubTask
+        fields = ['title', 'description', 'task', 'status', 'deadline', 'created_at']
         read_only_fields = ['created_at']
 
 
@@ -58,6 +66,51 @@ class TaskSerializer(serializers.ModelSerializer):
         return instance
 
 
+class CategoryCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['name']
+
+    def create(self, validated_data):
+        name = validated_data.get('name')
+        if Category.objects.filter(name=name).exists():
+            raise serializers.ValidationError(
+                "Category with this name already exists."
+            )
+        return Category.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        name = validated_data.get('name')
+        if Category.objects.filter(name=name).exclude(id=instance.id).exists():
+            raise serializers.ValidationError(
+                "Category with this name already exists."
+            )
+        instance.name = name
+        instance.save()
+        return instance
+
+
+class TaskDetailSerializer(serializers.ModelSerializer):
+    """Detailed serializer for tasks with nested subtasks"""
+    categories = CategorySerializer(many=True, read_only=True)
+    subtasks = SubTaskSerializer(many=True, read_only=True)
+    subtasks_count = serializers.SerializerMethodField()
+    overdue = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = [
+            'id', 'title', 'description', 'categories', 'status', 'deadline',
+            'created_at', 'subtasks', 'subtasks_count', 'overdue'
+        ]
+        read_only_fields = ['created_at']
+
+    def get_subtasks_count(self, obj):
+        return obj.subtasks.count()
+
+    def get_overdue(self, obj):
+        return obj.deadline < timezone.now() and obj.status != 'DONE'
+
 class TaskCreateSerializer(serializers.ModelSerializer):
     """Simplified serializer for task creation"""
     category_ids = serializers.ListField(
@@ -68,6 +121,14 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ['title', 'description', 'status', 'deadline', 'category_ids']
+
+    def validate_deadline(self, value):
+        """Validate that deadline is not in the past"""
+        if value < timezone.now():
+            raise serializers.ValidationError(
+                "Deadline cannot be in the past."
+            )
+        return value
 
     def create(self, validated_data):
         category_ids = validated_data.pop('category_ids', [])
