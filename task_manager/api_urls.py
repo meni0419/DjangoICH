@@ -1,15 +1,22 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+
 from .api_views import (
     TaskListCreateAPIView,
     TaskRetrieveUpdateDestroyAPIView,
     SubTaskListCreateAPIView,
     SubTaskRetrieveUpdateDestroyAPIView,
-    task_analytics_api_view,
+    task_analytics_api_view, CategoryViewSet,
 )
 
 app_name = 'task_manager_api'
+router = DefaultRouter()
+router.register(r'categories', CategoryViewSet)
 
 urlpatterns = [
+    # category
+    path('', include(router.urls)),
+
     # Tasks
     path('tasks/', TaskListCreateAPIView.as_view(), name='task-list-create'),
     path('tasks/<int:pk>/', TaskRetrieveUpdateDestroyAPIView.as_view(), name='task-detail'),

@@ -1,5 +1,5 @@
 from rest_framework import generics, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Count
@@ -7,14 +7,47 @@ from django.db.models import Count
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.viewsets import ModelViewSet
 
 from .models import Task, Category, SubTask
 from .serializers import (
     TaskSerializer,
     TaskCreateSerializer,
     SubTaskSerializer,
-    SubTaskCreateSerializer,
+    SubTaskCreateSerializer, CategoryCreateSerializer, CategorySerializer,
 )
+
+
+class CategoryViewSet(ModelViewSet):
+    """
+    Полный CRUD для категорий.
+    - Мягкое удаление в destroy()
+    - Экшен count_tasks: агрегированный подсчёт задач по всем категориям
+    """
+    queryset = Category.objects.all().order_by('name')
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['name']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update']:
+            return CategoryCreateSerializer
+        return CategorySerializer
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'], url_path='count_tasks')
+    def count_tasks(self, request, *args, **kwargs):
+        """
+        Возвращает список категорий с количеством связанных задач.
+        Только активные (не «удалённые») категории.
+        """
+        data = Category.objects.filter(is_deleted=False).annotate(
+            task_count=Count('task')
+        ).values('id','name', 'task_count').order_by('-task_count')
+        return Response(data)
 
 
 class SubTaskPagination(PageNumberPagination):

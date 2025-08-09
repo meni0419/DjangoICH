@@ -71,13 +71,15 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         model = Category
         fields = ['name']
 
-    def create(self, validated_data):
-        name = validated_data.get('name')
-        if Category.objects.filter(name=name).exists():
-            raise serializers.ValidationError(
-                "Category with this name already exists."
-            )
-        return Category.objects.create(**validated_data)
+    def validate_name(self, value):
+        # Базовая проверка уникальности среди не «удалённых» категорий
+        qs = Category.objects.all()
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.filter(name=value).exists():
+            raise serializers.ValidationError("Category with this name already exists.")
+        return value
+
 
     def update(self, instance, validated_data):
         name = validated_data.get('name')

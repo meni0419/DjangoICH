@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.utils import timezone
 
@@ -11,8 +10,23 @@ STATUS_CHOICES = [
 ]
 
 
+class CategoryQuerySet(models.QuerySet):
+    def delete(self):
+        # Soft delete для queryset
+        now = timezone.now()
+        return super().update(is_deleted=True, deleted_at=now)
+
+
+class CategoryManager(models.Manager):
+    def get_queryset(self):
+        return CategoryQuerySet(self.model, using=self._db).filter(is_deleted=False)
+
+
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'task_manager_category'
@@ -21,6 +35,11 @@ class Category(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['name'], name='unique_category_name')
         ]
+
+    def delete(self, *args, **kwargs):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save(update_fields=['is_deleted', 'deleted_at'])
 
     def __str__(self):
         return self.name
