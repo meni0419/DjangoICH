@@ -58,25 +58,45 @@ class TaskDetailAPIView(generics.RetrieveAPIView):
     serializer_class = TaskSerializer
 
 
+class SubTaskPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 class SubTaskListCreateView(APIView):
-    """API endpoint for creating subtasks"""
+    """API endpoint for listing and creating subtasks with pagination and filters"""
+
+    pagination_class = SubTaskPagination
 
     def get(self, request):
-        """Get list of all subtasks"""
-        task_id = request.GET.get('task_id')
+        """Get list of subtasks with optional filters and pagination"""
+        subtasks = SubTask.objects.all()
 
+        # Optional filter: by parent task id
+        task_id = request.query_params.get('task_id')
         if task_id:
-            subtasks = SubTask.objects.filter(task_id=task_id)
-        else:
-            subtasks = SubTask.objects.all()
+            subtasks = subtasks.filter(task_id=task_id)
 
+        # Optional filter: by parent task title (exact, case-insensitive)
+        task_title = request.query_params.get('task_title')
+        if task_title:
+            subtasks = subtasks.filter(task__title__iexact=task_title.strip())
+
+        # Filter by subtask status
         status_filter = request.query_params.get('status')
         if status_filter:
             subtasks = subtasks.filter(status=status_filter)
 
+        # Ordering: newest first
         subtasks = subtasks.select_related('task').order_by('-created_at')
-        serializer = SubTaskSerializer(subtasks, many=True)
-        return Response(serializer.data)
+
+        # Pagination
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(subtasks, request, view=self)
+        serializer = SubTaskSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
 
     def post(self, request):
         """Create a new subtask"""
