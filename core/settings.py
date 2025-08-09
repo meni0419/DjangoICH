@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'blog',
     'task_manager',
     'rest_framework',
+    'django_filters',
 ]
 
 # Add DRF settings
