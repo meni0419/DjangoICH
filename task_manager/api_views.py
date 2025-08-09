@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.db.models import Count
 from .models import Task, Category, SubTask
 from .serializers import TaskSerializer, TaskCreateSerializer, SubTaskSerializer, SubTaskCreateSerializer
+from rest_framework.pagination import PageNumberPagination
+from django.db.models.functions import ExtractWeekDay
 
 
 class TaskCreateAPIView(generics.CreateAPIView):
@@ -41,6 +43,11 @@ class TaskListAPIView(generics.ListAPIView):
         category_filter = self.request.query_params.get('category')
         if category_filter:
             queryset = queryset.filter(categories__id=category_filter)
+
+        # Filter by weekday
+        weekday_filter = self.request.query_params.get('weekday')
+        if weekday_filter:
+            queryset = queryset.annotate(weekday=ExtractWeekDay('deadline')).filter(weekday=weekday_filter)
 
         return queryset
 
