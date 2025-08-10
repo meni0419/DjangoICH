@@ -1,10 +1,11 @@
 from rest_framework import generics, status
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Count
 
 from rest_framework.pagination import PageNumberPagination, CursorPagination
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -20,7 +21,7 @@ from .serializers import (
 
 
 class CategoryCursorPagination(CursorPagination):
-    page_size = 6
+    page_size = 5
     ordering = 'name'
     page_size_query_param = None
 
@@ -31,6 +32,7 @@ class CategoryViewSet(ModelViewSet):
     - Мягкое удаление в destroy()
     - Экшен count_tasks: агрегированный подсчёт задач по всем категориям
     """
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Category.objects.all().order_by('name')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['name']
@@ -77,6 +79,7 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
     Поиск: title, description.
     Сортировка: created_at (по умолчанию -created_at).
     """
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Task.objects.all().prefetch_related('categories', 'subtasks').order_by('-created_at')
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = {
@@ -106,6 +109,7 @@ class TaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve + Update + Destroy task.
     """
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Task.objects.all().prefetch_related('categories', 'subtasks')
     lookup_field = 'pk'
 
@@ -125,6 +129,7 @@ class SubTaskListCreateAPIView(generics.ListCreateAPIView):
     Сортировка: created_at (по умолчанию -created_at).
     Пагинация: 5 на страницу.
     """
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = SubTask.objects.select_related('task').all().order_by('-created_at')
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = {
@@ -146,6 +151,7 @@ class SubTaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
     """
     Retrieve + Update + Destroy subtask.
     """
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = SubTask.objects.select_related('task').all()
     lookup_field = 'pk'
 
@@ -156,6 +162,7 @@ class SubTaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def task_analytics_api_view(request):
     """API endpoint for task analytics and statistics"""
 
