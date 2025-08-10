@@ -11,7 +11,8 @@ from .api_views import (
 
 app_name = 'task_manager_api'
 router = DefaultRouter()
-router.register(r'categories', CategoryViewSet)
+router.register(r'categories', CategoryViewSet, basename='category'
+)
 
 urlpatterns = [
     # category

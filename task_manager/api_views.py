@@ -29,14 +29,17 @@ class CategoryViewSet(ModelViewSet):
     filterset_fields = ['name']
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update']:
+        # Для создания/обновления используем валидирующий сериализатор
+        if self.action in ['create', 'update', 'partial_update']:
             return CategoryCreateSerializer
         return CategorySerializer
 
     def destroy(self, request, *args, **kwargs):
+        # Мягкое удаление: вызываем переопределённый delete() модели
         instance = self.get_object()
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
     @action(detail=False, methods=['get'], url_path='count_tasks')
     def count_tasks(self, request, *args, **kwargs):
@@ -44,10 +47,14 @@ class CategoryViewSet(ModelViewSet):
         Возвращает список категорий с количеством связанных задач.
         Только активные (не «удалённые») категории.
         """
-        data = Category.objects.filter(is_deleted=False).annotate(
-            task_count=Count('task')
-        ).values('id','name', 'task_count').order_by('-task_count')
-        return Response(data)
+        data = (
+            Category.objects
+            .annotate(task_count=Count('task'))  # обратная связь M2M по Task.categories
+            .values('id', 'name', 'task_count')
+            .order_by('name')
+        )
+        return Response(list(data), status=status.HTTP_200_OK)
+
 
 
 class SubTaskPagination(PageNumberPagination):
