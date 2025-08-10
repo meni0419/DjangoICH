@@ -1,16 +1,15 @@
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
-from django.utils import timezone
-from django.db.models import Count
-
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.pagination import PageNumberPagination, CursorPagination
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
-
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny, IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.viewsets import ModelViewSet
-
+from django.utils import timezone
+from django.db.models import Count
+from .permissions import IsOwnerOrReadOnly
 from .models import Task, Category, SubTask
 from .serializers import (
     TaskSerializer,
@@ -39,7 +38,6 @@ class CategoryViewSet(ModelViewSet):
     pagination_class = CategoryCursorPagination
 
     def get_serializer_class(self):
-        # Для создания/обновления используем валидирующий сериализатор
         if self.action in ['create', 'update', 'partial_update']:
             return CategoryCreateSerializer
         return CategorySerializer
@@ -91,25 +89,19 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        # Для GET отдаём подробный TaskSerializer, для POST используем TaskCreateSerializer
         if self.request and self.request.method == 'POST':
             return TaskCreateSerializer
         return TaskSerializer
 
-    def create(self, request, *args, **kwargs):
-        # Переопределяем для того, чтобы после создания вернуть полные данные TaskSerializer
-        serializer = TaskCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        task = serializer.save()
-        response_serializer = TaskSerializer(task)
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 
 class TaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve + Update + Destroy task.
     """
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     queryset = Task.objects.all().prefetch_related('categories', 'subtasks')
     lookup_field = 'pk'
 
@@ -146,12 +138,18 @@ class SubTaskListCreateAPIView(generics.ListCreateAPIView):
             return SubTaskCreateSerializer
         return SubTaskSerializer
 
+    def perform_create(self, serializer):
+        task = serializer.validated_data.get('task')
+        if task and task.owner_id != self.request.user.id:
+            raise PermissionDenied('You do not have permission to perform this action.')
+        serializer.save(owner=self.request.user)
+
 
 class SubTaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve + Update + Destroy subtask.
     """
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     queryset = SubTask.objects.select_related('task').all()
     lookup_field = 'pk'
 
@@ -159,6 +157,13 @@ class SubTaskRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
         if self.request and self.request.method in ['PUT', 'PATCH']:
             return SubTaskCreateSerializer
         return SubTaskSerializer
+
+class MyTasksListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TaskSerializer
+
+    def get_queryset(self):
+        return Task.objects.filter(owner=self.request.user).prefetch_related('categories', 'subtasks').order_by('-created_at')
 
 
 @api_view(['GET'])

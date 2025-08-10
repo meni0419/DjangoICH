@@ -1,5 +1,8 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 STATUS_CHOICES = [
     ('NEW', 'New'),
@@ -46,6 +49,7 @@ class Category(models.Model):
 
 
 class Task(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     title = models.CharField(max_length=200)
     description = models.TextField()
     categories = models.ManyToManyField('Category')
@@ -67,6 +71,7 @@ class Task(models.Model):
 
 
 class SubTask(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='subtasks')
     title = models.CharField(max_length=200)
     description = models.TextField()
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')

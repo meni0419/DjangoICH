@@ -122,6 +122,7 @@ INSTALLED_APPS = [
     'task_manager',
     'rest_framework',
     'django_filters',
+    'drf_yasg',
 ]
 
 # Add DRF settings

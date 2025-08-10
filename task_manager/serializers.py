@@ -11,9 +11,11 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class SubTaskSerializer(serializers.ModelSerializer):
+    owner = serializers.CharField(source='owner.username', read_only=True)
+
     class Meta:
         model = SubTask
-        fields = ['id', 'title', 'description', 'status', 'deadline', 'created_at']
+        fields = ['id', 'title', 'description', 'status', 'deadline', 'created_at', 'owner']
         read_only_fields = ['created_at']
 
 class SubTaskCreateSerializer(serializers.ModelSerializer):
@@ -24,6 +26,8 @@ class SubTaskCreateSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    owner = serializers.CharField(source='owner.username', read_only=True)
+
     categories = CategorySerializer(many=True, read_only=True)
     category_ids = serializers.ListField(
         child=serializers.IntegerField(),
@@ -36,9 +40,9 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = [
             'id', 'title', 'description', 'categories', 'category_ids',
-            'status', 'deadline', 'created_at', 'subtasks'
+            'status', 'deadline', 'created_at', 'subtasks', 'owner'
         ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_at', 'owner']
 
     def create(self, validated_data):
         category_ids = validated_data.pop('category_ids', [])
@@ -69,7 +73,7 @@ class TaskSerializer(serializers.ModelSerializer):
 class CategoryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['name']
+        fields = ['id', 'name']
 
     def validate_name(self, value):
         # Базовая проверка уникальности среди не «удалённых» категорий
@@ -98,14 +102,15 @@ class TaskDetailSerializer(serializers.ModelSerializer):
     subtasks = SubTaskSerializer(many=True, read_only=True)
     subtasks_count = serializers.SerializerMethodField()
     overdue = serializers.SerializerMethodField()
+    owner = serializers.CharField(source='owner.username', read_only=True)
 
     class Meta:
         model = Task
         fields = [
             'id', 'title', 'description', 'categories', 'status', 'deadline',
-            'created_at', 'subtasks', 'subtasks_count', 'overdue'
+            'created_at', 'subtasks', 'subtasks_count', 'overdue', 'owner'
         ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_at', 'owner']
 
     def get_subtasks_count(self, obj):
         return obj.subtasks.count()
