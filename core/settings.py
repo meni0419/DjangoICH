@@ -123,6 +123,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'drf_yasg',
+    'rest_framework_simplejwt.token_blacklist',
+    'users',
 ]
 
 # Add DRF settings
@@ -138,10 +140,10 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': False,
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
 }
@@ -197,6 +199,28 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+CSRF_COOKIE_SECURE = os.getenv('COOKIE_SECURE', 'False').lower() == 'true'
+CSRF_COOKIE_SAMESITE = os.getenv('COOKIE_SAMESITE', 'Lax')
+
+AUTH_COOKIES = {
+    'ACCESS': {
+        'NAME': 'access_token',
+        'PATH': '/',
+        'HTTPONLY': True,
+        'SECURE': os.getenv('COOKIE_SECURE', 'False').lower() == 'true',
+        'SAMESITE': os.getenv('COOKIE_SAMESITE', 'Lax'),
+        'MAX_AGE': 60 * 120,
+    },
+    'REFRESH': {
+        'NAME': 'refresh_token',
+        'PATH': '/api/auth/',
+        'HTTPONLY': True,
+        'SECURE': os.getenv('COOKIE_SECURE', 'False').lower() == 'true',
+        'SAMESITE': os.getenv('COOKIE_SAMESITE', 'Lax'),
+        'MAX_AGE': 60 * 60 * 24 * 7,  # 7 дней
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
